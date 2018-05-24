@@ -1,0 +1,35 @@
+#!/bin/bash
+
+msg () {
+    for msgline
+    do echo "$pn: $msgline" >&2
+    done
+}
+
+fatal () { msg "$@" ; usage ; exit 1 ; }
+
+finish () {
+    [[ $debug -eq 1 ]] && cp -a $td "$launchdir"/
+    rm -r $td
+    cd "$launchdir"
+    exit
+}
+
+tempdir () {
+    : ${TMPDIR:="/tmp"}
+    tdbase=$TMPDIR/$USER
+    test -e $tdbase || mkdir -p $tdbase
+    td=$(mktemp -d $tdbase/$(basename $0).XXXXXX) || fatal "Could not create temp dir in $tdbase"
+    echo $td
+}
+
+normalpath () {
+    local s="$1"
+    [[ ${#s} -lt 800 ]] || fatal "Option path too long"
+    [[ "$s" =~ ^[[:print:]]*$ ]] || fatal "Non-printables in path"
+    dir=$(dirname -- "$1")
+    bas=$(basename -- "$1")
+    echo $(cd $dir && pwd)/$bas
+}
+
+set -e   # Terminate script at first error
