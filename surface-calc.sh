@@ -1,5 +1,15 @@
 #!/bin/bash
 
+usage () {
+    msg "
+
+    Usage: $pn 3d-label.nii.gz
+
+    Takes a binary label image.  Calculates the surface-to-volume ratio.
+
+    "
+}
+
 set -e
 #set -vx
 dn=$(dirname $0)
@@ -17,8 +27,21 @@ mybc () {
     echo 'scale=6 ;' "$clc" | bc
 }
 
+# Check for MIRTK
+mirtkhelp="$(which help-rst)"
+if [[ -n $mirtkhelp ]]
+then
+    info="$(dirname $mirtkhelp)"/info
+else
+    fatal "MIRTK not on path"
+fi
+
+$info $label >info.txt || fatal "Could not read input file $label"
+
+maxintens=$(grep "Maximum.intensity" info.txt | cut -d ' ' -f 3 )
+[[ $maxintens -eq 1 ]] || fatal "Need binary label file as input -- no binary label in $label"
 # Read voxel size
-read dimi dimk dimj < <( info $label | grep Voxel.dimensions | tr -s ' ' | cut -d ' ' -f 4-6 )
+read dimi dimk dimj < <( grep "Voxel.dimensions" info.txt | tr -s ' ' | cut -d ' ' -f 4-6 )
 
 # Generate three dofs for translating in each direction
 init-dof i.dof.gz -tx $dimi
