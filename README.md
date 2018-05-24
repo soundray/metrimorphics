@@ -4,5 +4,5 @@
 
 ## Dependencies:
 
-MIRTK (github.com/BioMedIA/MIRTK)
-bc (An arbitrary precision calculator language)
+* MIRTK (github.com/BioMedIA/MIRTK)
+* bc (An arbitrary precision calculator language)
