@@ -3,11 +3,16 @@
 usage () {
     msg "
 
-    Usage: $pn 3d-label.nii.gz
+    Usage: $pn 3d-label.nii.gz [-o output.csv] -header 
 
     Takes a binary label image.  Calculates the surface-to-volume ratio.
 
     "
+}
+
+mybc () {
+    local clc=$(echo "$1" | sed -s 's/·/*/g' | sed -e 's/[eE]+*/\*10\^/g' )
+    echo 'scale=6 ;' "$clc" | bc -l
 }
 
 set -e
@@ -15,17 +20,6 @@ set -e
 dn=$(dirname $0)
 pn=$(basename $0)
 . $dn/common
-
-label=$(normalpath $1) ; shift
-bn=$(basename $label .nii.gz)
-
-td=$(tempdir)
-cd $td
-
-mybc () {
-    local clc=$(echo "$1" | sed -s 's/·/*/g' | sed -e 's/[eE]+*/\*10\^/g' )
-    echo 'scale=6 ;' "$clc" | bc -l
-}
 
 # Check for MIRTK
 mirtkhelp="$(which help-rst)"
@@ -35,6 +29,26 @@ then
 else
     fatal "MIRTK not on path"
 fi
+
+label=$(normalpath $1) ; shift
+bn=$(basename $label .nii.gz)
+while [[ $# -gt 0 ]]
+do
+    case $1 in
+	-o)              output=$(normalpath $2) ; shift ; shift ;;
+	-header)         header=1 ; shift ;;
+	-debug)           debug=1 ; shift ;;
+        --) shift; break;;
+        -*)
+            fatal "Parameter error" ;;
+        *)  break;;
+    esac
+done
+
+td=$(tempdir)
+trap finish EXIT
+launchdir=$PWD
+cd $td
 
 $info $label >info.txt || fatal "Could not read input file $label"
 
@@ -107,11 +121,14 @@ labelvolmm3=$(mybc "$labelvolmm3")
 svr=$( echo $surface / $labelvolmm3 )
 svr=$( mybc "$svr" )
 
-echo Name,Volume_mm^3,Surface_mm^2,SVR
-echo -n $bn,
-echo -n $labelvolmm3,
-echo -n $surface,
-echo $svr
+cat /dev/null >output.csv
+[[ $header -eq 1 ]] && echo Name,Volume_mm^3,Surface_mm^2,SVR | tee -a output.csv
+echo -n $bn, | tee -a output.csv
+echo -n $labelvolmm3, | tee -a output.csv
+echo -n $surface, | tee -a output.csv
+echo $svr | tee -a output.csv
+
+[[ -n $output ]] && cp output.csv $output
 
 exit 0
 
