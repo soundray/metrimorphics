@@ -9,11 +9,10 @@ nlabels=3 # Number of distinct non-background labels (todo: get from input files
 
 brake() { while true ; do j=$(jobs -r | wc -l) ; test $j -lt $1 && break ; done ; }
 
-delimiter='     '
 showthis() { 
     [[ $quiet ]] && return
     echo $1 
-    calculate-element-wise $1 -delimiter "$delimiter"
+    calculate-element-wise $1 -delimiter ",," | tr ',' '\t'
     echo
 }
 
